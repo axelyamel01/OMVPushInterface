@@ -15,7 +15,7 @@ from DataCollectorsRegistry import generate_data_collectors_registry
 def args_parser():
     working_dir = str(pathlib.Path(__file__).parent.resolve())
     parser = argparse.ArgumentParser(description='Push notifications system for OMV')
-    parser.add_argument("-c", "--config", help="Config file that contains the credentials for SimplePush", \
+    parser.add_argument("-c", "--config", help="Config file that contains the credentials for Simplepush", \
                         default=working_dir + "/config/push-notifications-system.cfg")
     parser.add_argument("-d", "--debug", help="Enable debug mode, messages will be printed and not sent", \
                         action='store_true')
@@ -24,7 +24,7 @@ def args_parser():
 
     args = parser.parse_args()
     if not os.path.isfile(args.config):
-        sys.exit("Error: SimplePush config file " + args.config + " not found")
+        sys.exit("Error: Simplepush config file " + args.config + " not found")
 
     return args
 
@@ -126,6 +126,10 @@ def parse_config_file(config_file_path):
         counter = counter + 1
 
     config_file.close()
+
+    # Exit if there is no device registered
+    if len(simplepush_devices) == 0:
+        sys.exit("Error: No Simplepush device found in the config file")
 
     # Set the defaults not found
     if omv_system_info["omv-web-protocol"] == "":

@@ -19,6 +19,8 @@ def generate_data_collectors_registry(message_handler, args):
     # Run the updates needed collector, temporary data will be stored in /var/tmp/"
     message_handler.add_collector(DataCollectors.updates_available_collector, "/var/tmp/", debug_collector)
 
+    # collector for disk space
+    message_handler.add_collector(DataCollectors.disk_space_collector, "/", "root-drive", "/var/tmp/", 20.0, 7, debug_collector)
+
     # TODO: Collectors needed
-    #   1) Disk space available
-    #   2) Disks temperature
+    #   1) Disks temperature

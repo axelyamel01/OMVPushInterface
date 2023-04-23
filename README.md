@@ -2,7 +2,7 @@
 
 Author: Axel Y. Rivera <br />
 Email: axelrivera1986@gmail.com <br />
-Version: 2023.04.22
+Version: 2023.04.23
 
 ## Summary
 
@@ -10,6 +10,10 @@ OMV push notifications is a tool for collecting data from the OS, parse and send
 
 ## Release notes:
 
+- 2023.04.23:
+    * Fixed bug when there is no `simplepush-device` registered in config file
+    * Added disk space collector
+    * Added description for each collector in the collectors' [README](/DataCollectors/README.md) file.
 - 2023.04.22:
     * Fixed a bug in the updates available collector where the number of updates available mismatched between debug and non-debug modes
     * Added extra comments in the updates available and temperature collectors
@@ -81,13 +85,28 @@ The basic idea is to keep things as simple as possible (I hope it is simple for 
 
     I strongly suggest to check the [template file](/config/push-notifications-system.cfg) so you can have an idea how the config file works.
 
-4. Run it through the terminal with the following command: `python3 /PATH/TO/OMVPushNotifications.py -c /PATH/TO/CONFIG/FILE`. If `-c` is not added then the [template file](/config/push-notifications-system.cfg) will be used as config file, therefore make sure it is configured properly. You can use `-d` to print in the messages in the command line rather than send them. Also, you can use `-e` to force the debug message to be sent (for example, if the CPU didn't reached the critical temperature but you want to print the current one).
+4. Take a look at the registered collectors in [DataCollectorsRegistry.py](/DataCollectorsRegistry.py) and update any parameter you need. For example, the disk space collector is registered as follows:
 
-5. Once you tested the interface in the terminal, go to the OMV web interface and schedule a new task (`System -> Scheduled Tasks`) with the command `python3 /PATH/TO/OMVPushNotifications.py -c /PATH/TO/CONFIG/FILE` and the time interval you would like (e.g. every 5 minutes).
+    ```
+    message_handler.add_collector(DataCollectors.disk_space_collector, "/", "root-drive", "/var/tmp/", 20.0, 7,    debug_collector)
+    ```
 
-6. Save the task and apply it.
+    This means that the disk space collector will compute the information using the following parameters:
+    - `"/"` (root): mount path
+    - `"root-drive"` : name used to identify drive
+    - `"/var/tmp/"`: path for storing temporary data
+    - `"20.0"` : message will be sent if there is 20% or less of space free
+    - `"7"` : number of days to resend the message if needed
 
-7. Done! (I hope this is simple `:)`)
+    Try changing these paramaters to your prefered setup. For more details on the registered collectors and the paramaters, refere to the [README](/DataCollectors/README.md) in the data collectors directory.
+
+5. Run it through the terminal with the following command: `python3 /PATH/TO/OMVPushNotifications.py -c /PATH/TO/CONFIG/FILE`. If `-c` is not added then the [template file](/config/push-notifications-system.cfg) will be used as config file, therefore make sure it is configured properly. You can use `-d` to print in the messages in the command line rather than send them. Also, you can use `-e` to force the debug message to be sent (for example, if the CPU didn't reached the critical temperature but you want to print the current one).
+
+6. Once you tested the interface in the terminal, go to the OMV web interface and schedule a new task (`System -> Scheduled Tasks`) with the command `python3 /PATH/TO/OMVPushNotifications.py -c /PATH/TO/CONFIG/FILE` and the time interval you would like (e.g. every 5 minutes).
+
+7. Save the task and apply it.
+
+8. Done! (I hope this is simple `:)`)
 
 ## How it works?
 
@@ -98,7 +117,6 @@ The implementation of OMV push notifications interface is pretty simple. The bas
 There is no warranties using this tool. Also, this is **NOT** and official tool, plugin, package, or application from OpenMediaVault, Simplepush or its communities. This interface is a simple tool I developed as a side project. Feel free to contact me if you need help with this tool.
 
 ## TODO:
-1. Add a collector for checking the disk how much space free is available.
-2. Add an extra parameter to the temperature collector for collecting other temperatures like HDD.
-3. A simpler way to register a collector that won't depend on modifying source code.
-4. Simplify the install and configuration.
+1. Add an extra parameter to the temperature collector for collecting other temperatures like HDD.
+2. A simpler way to register a collector that won't depend on modifying source code.
+3. Simplify the install and configuration.
