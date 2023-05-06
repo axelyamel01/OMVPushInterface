@@ -7,11 +7,11 @@ from Utils import Utils
 # Class that use a data collector function to check if a message is
 # needed. If so, then send it
 class MessageGenerator:
-    def __init__(self, simplepush_devices, system_address, debug, collector_func):
+    def __init__(self, simplepush_devices, system_addresses, debug, collector_func):
         self.__collector_func = collector_func
         self.__simplepush_devices = simplepush_devices
         self.__debug = debug
-        self.__system_address = system_address
+        self.__system_addresses = system_addresses
 
     # return true if the result is generated correctly
     def __bad_result(self, result):
@@ -38,7 +38,7 @@ class MessageGenerator:
             result = self.__collector_func()
         else:
             result = self.__collector_func(*args)
-        
+
         return result
 
     # Run the function that collects the data with the proper args
@@ -54,7 +54,7 @@ class MessageGenerator:
         if not self.__bad_result(result):
             curr_title = result[1]
             curr_message = result[2]
-            curr_message = curr_message + self.__generate_message_footer(self.__system_address)
+            curr_message = curr_message + self.__generate_message_footer()
             if not self.__debug:
                 for device in self.__simplepush_devices:
                     curr_key = device["key"]
@@ -67,8 +67,15 @@ class MessageGenerator:
                 print(curr_message)
                 print("\n=========================================================\n")
 
-    def __generate_message_footer(self, system_address):
+    def __generate_message_footer(self):
         time_info = Utils().get_current_date_and_time()
-        footer = "\nOMV Web link: " + system_address + "\n"
+        footer = "\nOMV Web link"
+        if len(self.__system_addresses) == 1:
+            footer = footer + ": " + self.__system_addresses[0][1] + "\n"
+        elif len(self.__system_addresses) > 1:
+            footer = footer + "s: \n"
+            for sys_address in self.__system_addresses:
+                footer = footer + "    " + u'\u2022' + " " + sys_address[0] + ": " + sys_address[1] + "\n"
+
         footer  = footer + time_info[0] + "\n" + time_info[1]
         return footer

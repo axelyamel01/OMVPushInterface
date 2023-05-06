@@ -34,14 +34,16 @@ def parse_config_file(config_file_path):
     config_file = open(config_file_path, "r")
     allowed_sections = {
         "simplepush-device" : ["key", "password", "salt"],
-        "omv-system-info" : ["omv-hostname", "omv-domain-name", "omv-port", "omv-web-protocol"]
+        "omv-system-address" : ["name", "hostname", "domain-name", "port", "web-protocol", "ip"]
     }
 
     omv_system_info = {
-            "omv-hostname" : "",
-            "omv-domain-name" : "",
-            "omv-port" : "",
-            "omv-web-protocol" : ""
+            "name" : "",
+            "hostname" : "",
+            "domain-name" : "",
+            "port" : "",
+            "web-protocol" : "",
+            "ip" : ""
     }
 
     simplepush_device = {
@@ -51,13 +53,16 @@ def parse_config_file(config_file_path):
     }
 
     simplepush_devices = []
+    omv_systems = []
 
     lines = config_file.readlines()
 
-    counter = 1
+    counter = 0
     curr_section = ""
-    omv_system_set = False
+    omv_system_name_found = False
+
     for line in lines:
+        counter = counter + 1
         strip_line = line.strip()
         if strip_line == "":
             continue
@@ -68,8 +73,12 @@ def parse_config_file(config_file_path):
         split_line = strip_line.split()
         key = split_line[0].rstrip(split_line[0][-1])
         if key in allowed_sections:
-            if curr_section == "omv-system-info":
-                if omv_system_info["omv-hostname"] == "" or omv_system_info["omv-domain-name"] == "":
+            if curr_section == "omv-system-address":
+                curr_omv_system = omv_systems[-1]
+                good_omv_config = curr_omv_system["hostname"] != "" and curr_omv_system["domain-name"] != ""
+                if not good_omv_config:
+                    good_omv_config = curr_omv_system["ip"] != ""
+                if not good_omv_config:
                     config_file.close()
                     sys.exit("Error: Incorrect OMV system configuration in config file. " \
                              "Check around line " + str(counter))
@@ -86,27 +95,28 @@ def parse_config_file(config_file_path):
                 new_device = copy.deepcopy(simplepush_device)
                 simplepush_devices.append(new_device)
 
-            elif key == "omv-system-info":
-                if omv_system_set == True:
-                    config_file.close()
-                    sys.exit("Error: Double OMV system configuration in config file. " + \
-                             "Check around line " + str(counter))
-
-                omv_system_set = True
-
-            else:
-                config_file.close()
-                sys.exit("Error: Incorrect section in config file. Check around line " + str(counter))
+            elif key == "omv-system-address":
+                new_omv_system = copy.deepcopy(omv_system_info)
+                new_omv_system["name"] = "OMV-" + str(len(omv_systems) + 1)
+                omv_system_name_found = False
+                omv_systems.append(new_omv_system)
 
             curr_section = key
 
         elif curr_section != "" and key in allowed_sections[curr_section]:
-            if curr_section == "omv-system-info":
-                if omv_system_info[key] != "":
+            if len(split_line) < 2:
+                config_file.close()
+                sys.exit("Error: Empty field in config file. Check around line " + str(counter))
+            if curr_section == "omv-system-address":
+                good_key = omv_systems[-1][key] == ""
+                if not good_key and key == "name" and not omv_system_name_found:
+                    good_key = True
+                    omv_system_name_found = True
+                if not good_key:
                     config_file.close()
-                    sys.exit("Error: Repeated entry for OMV system configuration in config file. Check around line " + str(counter))
+                    sys.exit("Error: Repeated entry for OMV address configuration in config file. Check around line " + str(counter))
 
-                omv_system_info[key] = split_line[1]
+                omv_systems[-1][key] = split_line[1]
 
             elif curr_section == "simplepush-device":
                 if simplepush_devices[-1][key] != "":
@@ -115,45 +125,52 @@ def parse_config_file(config_file_path):
 
                 simplepush_devices[-1][key] = split_line[1]
 
-            else:
-                config_file.close()
-                sys.exit("Error: Something went wrong parsing the config file. Check around line " + str(counter))
-
         else:
             config_file.close()
             sys.exit("Error: Incorrect entry in config file. Check around line " + str(counter))
 
-        counter = counter + 1
-
     config_file.close()
 
-    # Exit if there is no device registered
+    # Exit if there is no device was registered
     if len(simplepush_devices) == 0:
         sys.exit("Error: No Simplepush device found in the config file")
 
+    # Exit if there is no system was registered
+    if len(omv_systems) == 0:
+        sys.exit("Error: No OMV system found in the config file")
+
     # Set the defaults not found
-    if omv_system_info["omv-web-protocol"] == "":
-        omv_system_info["omv-web-protocol"] = "http"
+    for omv_system in omv_systems:
+        if omv_system["web-protocol"] == "":
+            omv_system["web-protocol"] = "http"
 
-    if omv_system_info["omv-port"] == "":
-        omv_system_info["omv-port"] = 80
+        if omv_system["port"] == "":
+            omv_system["port"] = 80
 
-    return [simplepush_devices, omv_system_info]
+    return [simplepush_devices, omv_systems]
 
-def generate_system_web_address(omv_system_info):
+def generate_system_web_address(system_info):
     # TODO: Perhaps we don't need to specify this in the config file. I suspect
     # there is a way to query the OS and get all the OMV info needed
-    omv_hostname = omv_system_info["omv-hostname"]
-    omv_port = omv_system_info["omv-port"]
-    omv_domain_name = omv_system_info["omv-domain-name"]
-    omv_web_protocol = omv_system_info["omv-web-protocol"]
+    hostname = system_info["hostname"]
+    port = system_info["port"]
+    domain_name = system_info["domain-name"]
+    web_protocol = system_info["web-protocol"]
+    ip = system_info["ip"]
 
-    if omv_hostname == "" or omv_port == "" or omv_domain_name == "" or omv_web_protocol == "":
-        sys.exit("Error: Incorrect OMV system information.")
+    if port == "" or web_protocol == "":
+        return ""
 
-    system_web_address = omv_web_protocol + "://" + omv_hostname + "." + omv_domain_name
-    if omv_port != "80":
-        system_web_address = system_web_address + ":" + omv_port
+    system_web_address = web_protocol + "://"
+    if hostname and domain_name:
+        system_web_address = system_web_address + hostname + "." + domain_name
+    elif ip:
+        system_web_address = system_web_address + ip
+    else:
+        return ""
+
+    if port != "80":
+        system_web_address = system_web_address + ":" + port
 
     return system_web_address
 
@@ -179,7 +196,13 @@ def main():
     print(welcome_string)
 
     simplepush_devices, omv_system_info = parse_config_file(args.config)
-    system_address = generate_system_web_address(omv_system_info)
+    system_addresses = []
+    for omv_address in omv_system_info:
+        system_address = generate_system_web_address(omv_address)
+        if system_address == "":
+            sys.exit("Error: Incorrect OMV system information.")
+        system_addresses.append([omv_address["name"], system_address])
+
 
     if args.debug or args.emulate:
         print("\nSimplepush devices registered:")
@@ -191,17 +214,25 @@ def main():
             print("        - Salt: " + device["salt"] + "\n")
             counter = counter + 1
 
-        print("OMV web address: " + system_address + "\n")
+        if len(system_addresses) == 1:
+            print("OMV web address found: " + system_addresses[0][1])
+        elif len(system_addresses) > 1:
+            print("OMV web addresses found: ")
+            for system_address in system_addresses:
+                print("    * " + system_address[0] + ": " + system_address[1])
+        print("")
 
         if args.debug:
-            print("Messages won't be sent, they will be printed in the following format:\n")
-            print("Line 1: Title")
-            print("Line 2: Message body line 1")
-            print("Line 3: Message body line 2")
+            print("NOTE: Messages won't be sent, they will be printed in the following format:\n")
+            print("    Title")
+            print("    Message body line 1")
+            print("             " + u'\u22ee')
+            print("    Message body line n\n")
+            print("    Message footer")
             print("\n=========================================================\n")
 
     debug_collector = args.debug or args.emulate
-    message_handler = MessagesHandler(simplepush_devices, system_address, args.debug)
+    message_handler = MessagesHandler(simplepush_devices, system_addresses, args.debug)
     generate_data_collectors_registry(message_handler, args)
     message_handler.run()
 
