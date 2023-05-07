@@ -59,8 +59,18 @@ def disk_space_collector(mount_path, disk_name, temp_dir, free_percent, days_int
 
         free_str = free_str + " (" + "{:.2f}".format(curr_free_percent) + "%)"
 
-        title = "OMV system running out of space"
-        message = "Mount \'" + mount_path + "\' is running out of space. Current status: \n"
+        title = ""
+        if message_needed:
+            title = "OMV system running out of space"
+        else:
+            title = "OMV system disk space"
+
+        message = "Mount \'" + mount_path + "\'"
+        if message_needed:
+            message = message + " is running out of space. Current status: \n"
+        else:
+            message = message + " current status:\n"
+
         message = message + "  " + u"\u2022" + " Total: " + total_str + "\n"
         message = message + "  " + u"\u2022" + " Used: " + used_str + "\n"
         message = message + "  " + u"\u2022" + " Free: " + free_str + "\n"

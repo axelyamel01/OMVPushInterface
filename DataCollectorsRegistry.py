@@ -11,7 +11,7 @@ def generate_data_collectors_registry(message_handler, args):
     if type(message_handler) != MessagesHandler:
         sys.exit("Error: Issue handling the registry for the messages handler")
 
-    debug_collector = args.debug or args.emulate
+    debug_collector = args.debug or args.emulate or args.verbose
 
     # Run the CPU temperature collector with 70 C as the critical temperature
     message_handler.add_collector(DataCollectors.temperature_collector, 70, debug_collector)

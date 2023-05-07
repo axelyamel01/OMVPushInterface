@@ -2,7 +2,7 @@
 
 Author: Axel Y. Rivera <br />
 Email: axelrivera1986@gmail.com <br />
-Version: 2023.05.06
+Version: 2023.05.07
 
 ## Summary
 
@@ -10,6 +10,10 @@ OMV push notifications is a tool for collecting data from the OS, parse and send
 
 ## Release notes:
 
+- 2023.05.07:
+    * Fixed bug when there were spaces between colon(:) and fields in config file
+    * Updated message for disk space collector
+    * Added verbose mode
 - 2023.05.06:
     * Changed the config section `omv-system-info` to `omv-system-address`
     * Allowed to configure multiple `omv-system-address` sections
@@ -100,7 +104,7 @@ The basic idea is to keep things as simple as possible (I hope it is simple for 
 4. Take a look at the registered collectors in [DataCollectorsRegistry.py](/DataCollectorsRegistry.py) and update any parameter you need. For example, the disk space collector is registered as follows:
 
     ```
-    message_handler.add_collector(DataCollectors.disk_space_collector, "/", "root-drive", "/var/tmp/", 20.0, 7,    debug_collector)
+    message_handler.add_collector(DataCollectors.disk_space_collector, "/", "root-drive", "/var/tmp/", 20.0, 7, debug_collector)
     ```
 
     This means that the disk space collector will compute the information using the following parameters:
@@ -132,4 +136,3 @@ There is no warranties using this tool. Also, this is **NOT** an official tool, 
 1. Add an extra parameter to the temperature collector for collecting other temperatures like HDD.
 2. A simpler way to register a collector that won't depend on modifying source code.
 3. Simplify the installation and configuration.
-4. Add verbose mode (debug + emulation)

@@ -7,10 +7,11 @@ from Utils import Utils
 # Class that use a data collector function to check if a message is
 # needed. If so, then send it
 class MessageGenerator:
-    def __init__(self, simplepush_devices, system_addresses, debug, collector_func):
+    def __init__(self, simplepush_devices, system_addresses, debug, send_message, collector_func):
         self.__collector_func = collector_func
         self.__simplepush_devices = simplepush_devices
         self.__debug = debug
+        self.__send_message = send_message
         self.__system_addresses = system_addresses
 
     # return true if the result is generated correctly
@@ -55,14 +56,15 @@ class MessageGenerator:
             curr_title = result[1]
             curr_message = result[2]
             curr_message = curr_message + self.__generate_message_footer()
-            if not self.__debug:
+            if self.__send_message:
                 for device in self.__simplepush_devices:
                     curr_key = device["key"]
                     curr_password = device["password"]
                     curr_salt = device["salt"]
                     simplepush.send(key=curr_key, password=curr_password, \
                             salt=curr_salt, title=curr_title, message=curr_message)
-            else:
+
+            if self.__debug:
                 print(curr_title)
                 print(curr_message)
                 print("\n=========================================================\n")
