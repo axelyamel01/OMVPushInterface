@@ -40,6 +40,37 @@ def updates_available_collector(temp_directory, debug):
 
         packages_to_update.append([package_name, package_curr_ver, package_update_ver])
 
+        # Identify any dependency that will be installed due to this package
+        for dep_list in candidate_version.depends_list["Depends"]:
+            for dep in dep_list:
+                target_pkg = dep.target_pkg
+
+                # If the dependency has a target package, and the package is
+                # currently installed, then skip it. The main loop that checks for
+                # updates will update it.
+                if target_pkg.current_ver != None:
+                    continue
+
+                # Traverse through the list of target versions and check if there
+                # is at least one variation of the dependency installed
+                dep_ver_installed = False
+                for target_ver in dep.all_targets():
+                    target_ver_pkg = target_ver.parent_pkg
+                    if target_ver_pkg.current_ver != None:
+                        dep_ver_installed = True
+                        break
+
+                if dep_ver_installed:
+                    continue
+
+                # Add the dependency as part of the updates list
+                ver_str = dep_cache.get_candidate_ver(target_pkg).ver_str
+                package_name = "Package name: " + target_pkg.name + "\n"
+                package_curr_ver = "  Current installed version: " + ver_str + "\n"
+                package_update_ver = "  Newer version available: " + ver_str + "\n"
+
+                packages_to_update.append([package_name, package_curr_ver, package_update_ver])
+
     # Check if there was packages collected before
     update_needed_db_file_name = temp_directory + "omv-push-notifications-update-pkgs.tmp"
 
@@ -85,7 +116,7 @@ def updates_available_collector(temp_directory, debug):
     # Message is needed if one of the entries in the new data base is not found
     # in the old data base, or debug is enabled
     num_new_pkgs = 0
-    if not len(prev_data_collected) == 0 and not debug:
+    if len(prev_data_collected) != 0 and not debug:
         for pkg in packages_to_update:
             package_found = False
             for old_pkg in prev_data_collected:
