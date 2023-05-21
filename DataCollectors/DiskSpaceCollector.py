@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 # import utilities
 from Utils import Utils
 
-def disk_space_collector(mount_path, disk_name, temp_dir, free_percent, days_interval, debug):
+def disk_space_collector(mount_path: str, disk_name: str, temp_dir: str, free_percent: float, days_interval: int, debug: bool):
     if not os.path.isdir(mount_path) and not os.path.isfile(mount_path):
         sys.exit("Error: Path provided to the disk space collector doesn't exists")
 

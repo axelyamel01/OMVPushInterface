@@ -52,3 +52,45 @@ class Utils:
         comment = comment + "#   " + time_info[1] + "\n#\n"
 
         return comment
+
+    # Given an input string, convert it to the expected type
+    def convert_str_to_type(self, source_str, dest_type):
+        ret_result = None
+        correct_conv = False
+        if dest_type == bool:
+            supported_true_str = ["true", "1", "enable"]
+            supporter_false_str = ["false", "1", "disable"]
+
+            check_val = source_str.lower()
+            if check_val in supported_true_str:
+                ret_result = True
+                correct_conv = True
+            elif check_val in supporter_false_str:
+                ret_result = False
+                correct_conv = True
+
+        elif dest_type == int:
+            if source_str.isnumeric():
+                ret_result = int(source_str)
+                correct_conv = True
+
+        elif dest_type == str:
+            ret_result = str(source_str)
+            correct_conv = True
+
+        elif dest_type == float:
+            try:
+                ret_result = float(source_str)
+                correct_conv = True
+            except ValueError:
+                ret_result = source_str
+
+        else:
+           ret_result = source_str
+
+        return ret_result, correct_conv
+
+    def get_collectors_available(self):
+        collectors_available = ["temperature_collector", "updates_available_collector", "disk_space_collector"]
+        return collectors_available
+

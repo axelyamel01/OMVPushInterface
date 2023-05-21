@@ -5,12 +5,15 @@ import sys
 import pathlib
 import copy
 import os
+from inspect import signature
+
+# Module that contains all the helper functions to handle data collection
+import DataCollectors
 
 # class to handle all the messages
 from MessagesHandler import MessagesHandler
 
-# Module for handling the data collectors
-from DataCollectorsRegistry import generate_data_collectors_registry
+from Utils import Utils
 
 def args_parser():
     working_dir = str(pathlib.Path(__file__).parent.resolve())
@@ -34,9 +37,11 @@ def args_parser():
 # a template
 def parse_config_file(config_file_path):
     config_file = open(config_file_path, "r")
+    collectors_available = Utils().get_collectors_available()
     allowed_sections = {
         "simplepush-device" : ["key", "password", "salt"],
-        "omv-system-address" : ["name", "hostname", "domain-name", "port", "web-protocol", "ip"]
+        "omv-system-address" : ["name", "hostname", "domain-name", "port", "web-protocol", "ip"],
+        "collector" : collectors_available
     }
 
     omv_system_info = {
@@ -54,8 +59,14 @@ def parse_config_file(config_file_path):
         "salt" : ""
     }
 
+    collector_skeleton = {
+        "name" : "",
+        "parameters" : {}
+    }
+
     simplepush_devices = []
     omv_systems = []
+    collectors_dict = []
 
     lines = config_file.readlines()
 
@@ -106,9 +117,23 @@ def parse_config_file(config_file_path):
                 omv_system_name_found = False
                 omv_systems.append(new_omv_system)
 
+            elif key == "collector":
+                if len(split_line) != 2:
+                    config_file.close()
+                    sys.exit("Error: Collector in config file with incorrect naming. Check around line " + str(counter))
+
+                new_collector = copy.deepcopy(collector_skeleton)
+                collector_name = split_line[1].strip()
+                if not collector_name in allowed_sections["collector"]:
+                    config_file.close()
+                    sys.exit("Error: Unrecognized collector found in config file. Check around line " + str(counter))
+
+                new_collector["name"] = collector_name
+                collectors_dict.append(new_collector)
+
             curr_section = key
 
-        elif curr_section != "" and key in allowed_sections[curr_section]:
+        elif curr_section != "" and curr_section in allowed_sections and key in allowed_sections[curr_section]:
             if len(split_line) < 2:
                 config_file.close()
                 sys.exit("Error: Empty field in config file. Check around line " + str(counter))
@@ -130,6 +155,19 @@ def parse_config_file(config_file_path):
 
                 simplepush_devices[-1][key] = split_line[1].strip()
 
+            else:
+                config_file.close()
+                sys.exit("Error: Incorrect entry in config file. Check around line " + str(counter))
+
+        elif curr_section == "collector":
+            if len(split_line) != 2:
+                config_file.close()
+                sys.exit("Error: Incorrect parameter definition for a collector. Check around line " + str(counter))
+
+            value = split_line[1].strip()
+            new_param = [key, value]
+            collectors_dict[-1]["parameters"][key] = value
+
         else:
             config_file.close()
             sys.exit("Error: Incorrect entry in config file. Check around line " + str(counter))
@@ -144,6 +182,9 @@ def parse_config_file(config_file_path):
     if len(omv_systems) == 0:
         sys.exit("Error: No OMV system found in the config file")
 
+    if len(collectors_dict) == 0:
+        sys.exit("Error: No collector registed in the config file")
+
     # Set the defaults not found
     for omv_system in omv_systems:
         if omv_system["web-protocol"] == "":
@@ -152,7 +193,7 @@ def parse_config_file(config_file_path):
         if omv_system["port"] == "":
             omv_system["port"] = 80
 
-    return [simplepush_devices, omv_systems]
+    return [simplepush_devices, omv_systems, collectors_dict]
 
 def generate_system_web_address(system_info):
     # TODO: Perhaps we don't need to specify this in the config file. I suspect
@@ -179,6 +220,47 @@ def generate_system_web_address(system_info):
 
     return system_web_address
 
+def parse_collectors(collectors_dict, message_handler, args):
+    if type(message_handler) != MessagesHandler:
+        sys.exit("Error: Issue handling the registry for the messages handler")
+
+    debug_collector = args.debug or args.emulate or args.verbose
+    for collector in collectors_dict:
+        if not hasattr(DataCollectors, collector["name"]):
+            sys.exit("Error: Collector " + collector["name"] + " does not exist. Check config file.")
+
+        collector_func = getattr(DataCollectors, collector["name"])
+        inspector_sig = signature(collector_func)
+        parameters = []
+        for arg in collector["parameters"].keys():
+            if not arg in inspector_sig.parameters:
+                sys.exit("Error: Argument " + arg + " does not exist in collector " + collector["name"] + ". Check config file.")
+
+        for arg, annot in inspector_sig.parameters.items():
+            type_needed = annot.annotation
+            param = collector["parameters"][arg]
+
+            if arg == "debug":
+                param = param.lower()
+                if param == "true" or param == "false":
+                    parameters.append(debug_collector)
+                else:
+                    parameters.append(param)
+
+            else:
+                utils = Utils()
+                param_conv, correct_conv = utils.convert_str_to_type(param, type_needed)
+                if correct_conv:
+                    parameters.append(param_conv)
+                else:
+                    # If type couldn't be converted, then assume that is a string, the collector should parse it
+                    parameters.append(param)
+
+        if len(parameters) != len(inspector_sig.parameters):
+            sys.exit("Error: Incorrect number of parameters for collector " + collector["name"] + ". Check config file.")
+
+        message_handler.add_collector(collector_func, *parameters)
+
 def main():
 
     args = args_parser()
@@ -199,7 +281,7 @@ def main():
 
     print(welcome_string)
 
-    simplepush_devices, omv_system_info = parse_config_file(args.config)
+    simplepush_devices, omv_system_info, collectors_dict = parse_config_file(args.config)
     system_addresses = []
     for omv_address in omv_system_info:
         system_address = generate_system_web_address(omv_address)
@@ -236,7 +318,7 @@ def main():
             print("\n=========================================================\n")
 
     message_handler = MessagesHandler(simplepush_devices, system_addresses, extra_modes)
-    generate_data_collectors_registry(message_handler, args)
+    parse_collectors(collectors_dict, message_handler, args)
     message_handler.run()
 
     print("OMV push notifications done")

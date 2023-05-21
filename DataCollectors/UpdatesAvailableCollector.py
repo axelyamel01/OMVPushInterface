@@ -14,7 +14,7 @@ from Utils import Utils
 #   temp_directory => directory used to store temporary data
 #   debug => display the message even if there is no new package to update,
 #            useful for debug
-def updates_available_collector(temp_directory, debug):
+def updates_available_collector(temp_directory: str, debug: bool):
     result = [False, '', '']
     packages_to_update = []
 
@@ -39,6 +39,9 @@ def updates_available_collector(temp_directory, debug):
         package_update_ver = "  Newer version available: " + candidate_version.ver_str + "\n"
 
         packages_to_update.append([package_name, package_curr_ver, package_update_ver])
+
+        if not "Depends" in candidate_version.depends_list:
+            continue
 
         # Identify any dependency that will be installed due to this package
         for dep_list in candidate_version.depends_list["Depends"]:

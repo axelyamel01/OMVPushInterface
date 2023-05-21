@@ -36,55 +36,75 @@ Time: HH:MM:SS [AM|PM]
 If the list returns the `[False, "", ""]`, then it means that the message is not valid and won't be sent.
 
 ## Current collectors available
+
+Use this section as a guide to add collectors into the config file. The field **Collector name** is name to identify the collector, and the parameters are the values needed. For example, if you want to add [Disk space](#disk-space) collector then add the following section in the config file:
+
+```
+collector: disk_space_collector
+    mount_path: /
+    disk_name: root-drive
+    temp_dir: /var/tmp/
+    free_percent: 20.0
+    days_interval: 7
+    debug: true
+```
+
 ### CPU temperature
 - Short description: Check if the CPU temperature reaches a critical temperature
 - File name: [TemperatureCollector.py](/DataCollectors/TemperatureCollector.py)
-- Registry function: `message_handler.add_collector(DataCollectors.temperature_collector, critical_temp, debug)`
+- Collector name: `temperature_collector`
 - Parameters:
-    - critical_temp: Critical temperature that where the message will be sent (float number)
-    - debug: Print message in debug mode (boolean)
+    - `critical_temp`: Critical temperature that where the message will be sent (float number)
+    - `debug`: Print message in debug mode (boolean)
 
 ### Updates available:
 - Short description: Check if there are updates available
 - File name: [UpdatesAvailableCollector.py](/DataCollectors/UpdatesAvailableCollector.py)
-- Registry function: `message_handler.add_collector(DataCollectors.updates_available_collector, dir_path, debug)`
+- Collector name: `updates_available_collector`
 - Parameters:
-    - dir_path: Path of the directory used to store temporary data (string)
-    - debug: Print message in debug mode (boolean)
+    - `dir_path`: Path of the directory used to store temporary data (string)
+    - `debug`: Print message in debug mode (boolean)
 
 ### Disk space:
 - Short description: Check if an specific mount path that represents an HDD has less than x% of space free
 - File name: [DiskSpaceCollector.py](/DataCollectors/DiskSpaceCollector.py)
-- Registry function: `message_handler.add_collector(DataCollectors.disk_space_collector, mount_path, disk_name, dir_path, critical_precent_free, days_interval, debug)`
+- Collector name: `disk_space_collector`
 - Parameters:
-    - mount_path: Path for the mount that you want to keep track (string)
-    - disk_name: Name that you would like to set for the mount (string)
-    - dir_path: Path of directory used to store temporary data (string)
-    - critical_percent_free: Percentage of free space available to send the message (float)
-    - days_interval: Interval of days to resend the message if space still not available (integer)
-    - debug: Print debug message (boolean)
+    - `mount_path`: Path for the mount that you want to keep track (string)
+    - `disk_name`: Name that you would like to set for the mount (string)
+    - `dir_path`: Path of directory used to store temporary data (string)
+    - `critical_percent_free`: Percentage of free space available to send the message (float)
+    - `days_interval`: Interval of days to resend the message if space still not available (integer)
+    - `debug`: Print debug message (boolean)
 
 ## How to create your own data collector?
 
-To implement a new data collector function, just create a new python file with a function in the DataCollectors directory. The function needs to return a list with the form mentioned in the [Summary](#summary) section. Take a look at the function `temperature_collector` in [TemperatureCollector.py](/DataCollectors/TemperatureCollector.py) for a simple example. This is a module with a function that collects the CPU temperature, and if it is equal or higher than the critical parameter then generate the message. Once the data collector function is implemented, it needs to be registered in [../DataCollectorsRegistry.py](/DataCollectorsRegistry.py). This module contains one function that is used for registering all the collectors in the messages handler. Update the function by adding the following line at the end of the file (don't forget the 4 spaces indentation):
+To implement a new data collector function, just create a new python file with a function in the DataCollectors directory. The function needs to return a list with the form mentioned in the [Summary](#summary) section. Also, try specifying the type for each function's parameter. This is important to help the parser for the config file when parsing a collector. If the type is not specified, then the parameter will be assumed that is a string and you will need to parse it in the function (**NOTE:** current types supported are `int`, `float`, `bool` and `string`, check function `convert_str_to_type` in [../Utils.py](/Utils.py) for more details). Take a look at the function `temperature_collector` in [TemperatureCollector.py](/DataCollectors/TemperatureCollector.py) for a simple example. This is a module with a function that collects the CPU temperature, and if it is equal or higher than the critical parameter then generate the message. Once the data collector function is implemented, it needs to be registered in the collectors available list (function `get_collectors_available`, file [../Utils.py](/Utils.py)). The collector's name will be the new python function's name. Then add the new section into the config file using the function's name and parameters:
 
 ```
-    message_handler.add_collector(DataCollectors.new_function_name, param 1, ..., param N)
+collector: FUNCTION NAME
+    parameter name 1: value
+    parameter name 2: value
+       ...
+    parameter name n: value
 ```
-The data collectors register passes the `args` collected from the command line in case you need to use debug, emulation, or anything from it. Also, importing the directory DataCollectors will automatically add your new module, therefore there is nothing else to do aside adding your new file with the collector function and registering the function. Test your new collector with the following command:
+
+In simple words, the collector's name is the python function, and the parameters' name will be the parameters used in the function definition. The order of the parameters in the config file shouldn't matter.
+
+Test your new collector with the following command:
 
 ```
 python3 /PATH/TO/OMVPushNotifications.py -d
 ```
 
-This will print the messages generated by the collectors registered in the command line. Try without `-d` or with `-e` to send the actual message. Also, remember to update the [Current collectors available](#current-collectors-available) section in this README file with the information related to the new collector. Try keeping the same format:
+This will print the messages generated by the collectors registered in the command line. Try without `-d` or with `-e` to send the actual message. Please, update the [Current collectors available](#current-collectors-available) section in this README file with the information related to the new collector. Try keeping the same format:
 
 ### Collector Name
 - Short description: One or two sentences describing what it does
 - File name: FILE_NAME.py
-- Registry function: `message_handler.add_collector(DataCollectors.function_name, parameter 1, parameter 2, ..., parameter n)`
+- Collector name: `new function's name`
 - Parameters:
-    - parameter 1: Description (type)
-    - parameter 2: Description (type)
+    - `parameter 1`: Description (type)
+    - `parameter 2`: Description (type)
     - &#8942;
-    - parameter n: Description (type)
+    - `parameter n`: Description (type)

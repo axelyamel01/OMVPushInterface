@@ -8,7 +8,7 @@ import psutil
 #            wasn't reached, useful for debug
 #
 # TODO: add as parameter other hardwares like HDD
-def temperature_collector(critical_temp, debug):
+def temperature_collector(critical_temp: float, debug: bool):
     curr_temperature = psutil.sensors_temperatures()['coretemp'][0][1]
 
     result = [False, "", ""]
