@@ -59,7 +59,7 @@ class Utils:
         correct_conv = False
         if dest_type == bool:
             supported_true_str = ["true", "1", "enable"]
-            supporter_false_str = ["false", "1", "disable"]
+            supporter_false_str = ["false", "0", "disable"]
 
             check_val = source_str.lower()
             if check_val in supported_true_str:
