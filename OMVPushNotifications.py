@@ -118,7 +118,7 @@ def parse_config_file(config_file_path):
                 omv_systems.append(new_omv_system)
 
             elif key == "collector":
-                if len(split_line) != 2:
+                if len(split_line) != 2 or split_line[1] == "":
                     config_file.close()
                     sys.exit("Error: Collector in config file with incorrect naming. Check around line " + str(counter))
 
@@ -160,7 +160,7 @@ def parse_config_file(config_file_path):
                 sys.exit("Error: Incorrect entry in config file. Check around line " + str(counter))
 
         elif curr_section == "collector":
-            if len(split_line) != 2:
+            if len(split_line) != 2 or split_line[1] == "":
                 config_file.close()
                 sys.exit("Error: Incorrect parameter definition for a collector. Check around line " + str(counter))
 
@@ -238,12 +238,19 @@ def parse_collectors(collectors_dict, message_handler, args):
 
         for arg, annot in inspector_sig.parameters.items():
             type_needed = annot.annotation
+
+            if not arg in collector["parameters"]:
+                sys.exit("Error: Argument " + arg + " required for collector " + collector["name"] + ". Check config file.")
+
             param = collector["parameters"][arg]
 
             if arg == "debug":
-                param = param.lower()
-                if param == "true" or param == "false":
-                    parameters.append(debug_collector)
+                param_conv, correct_conv = utils.convert_str_to_type(param, type_needed)
+                if correct_conv:
+                    if debug_collector and param_conv:
+                        parameters.append(True)
+                    else:
+                        parameters.append(False)
                 else:
                     parameters.append(param)
 
@@ -255,9 +262,6 @@ def parse_collectors(collectors_dict, message_handler, args):
                 else:
                     # If type couldn't be converted, then assume that is a string, the collector should parse it
                     parameters.append(param)
-
-        if len(parameters) != len(inspector_sig.parameters):
-            sys.exit("Error: Incorrect number of parameters for collector " + collector["name"] + ". Check config file.")
 
         message_handler.add_collector(collector_func, *parameters)
 
