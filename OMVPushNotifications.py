@@ -244,24 +244,21 @@ def parse_collectors(collectors_dict, message_handler, args):
 
             param = collector["parameters"][arg]
 
-            if arg == "debug":
-                param_conv, correct_conv = utils.convert_str_to_type(param, type_needed)
-                if correct_conv:
+            utils = Utils()
+            param_conv, correct_conv = utils.convert_str_to_type(param, type_needed)
+            if correct_conv:
+                # If the parameter requires the debug information, then use the
+                # specialized debug requirements
+                if arg == "debug":
                     if debug_collector and param_conv:
                         parameters.append(True)
                     else:
                         parameters.append(False)
                 else:
-                    parameters.append(param)
-
-            else:
-                utils = Utils()
-                param_conv, correct_conv = utils.convert_str_to_type(param, type_needed)
-                if correct_conv:
                     parameters.append(param_conv)
-                else:
-                    # If type couldn't be converted, then assume that is a string, the collector should parse it
-                    parameters.append(param)
+            else:
+                # If type couldn't be converted, then assume that is a string, the collector should parse it
+                parameters.append(param)
 
         message_handler.add_collector(collector_func, *parameters)
 
