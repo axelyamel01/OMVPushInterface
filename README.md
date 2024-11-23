@@ -2,7 +2,7 @@
 
 Author: Axel Y. Rivera <br />
 Email: axelrivera1986@gmail.com <br />
-Version: 2023.05.21
+Version: 2024.11.23
 
 ## Summary
 
@@ -10,6 +10,9 @@ OMV push notifications is a tool for collecting data from the OS, parse and send
 
 ## Release notes:
 
+- 2024.11.23:
+    * Fixed issue when package version is not vailable and produced a `None` check failure.
+    * Added feature to automatically collect the IP address from the system if the IP and hostname aren't provided.
 - 2023.05.21:
     * Replaced data collectors registry with a new section in config file called collector. Check the [README file](/DataCollectors/README.md) for data collectors to understand the new format.
     * Fixed a bug in the updates available collector when dependicies weren't available.
@@ -94,11 +97,11 @@ The basic idea is to keep things as simple as possible (I hope it is simple for 
 
     - `omv-system-address` : Section for the information related to the OMV system network
         - `name` : Preferred name for the current network configuration (**default value is `OMV-#`**)
-        - `hostname` : Host name of your OMV system (**required if `ip` is not provided**)
-        - `domain` : Domain of your OMV system (**required if `ip` is not provided**)
+        - `hostname` : Host name of your OMV system
+        - `domain` : Domain of your OMV system
         - `web-protocol` : Web protocol used to access the web interface (**default value is `http`**)
         - `port` : Port used to access OMV web interface (**default value is `80`**)
-        - `ip` : IP address of your OMV system (**required if `hostname` and `domain` are not provided**)
+        - `ip` : IP address of your OMV system
 
     - `collector` : Section for handling a data collector (**name required**)
         - `parameter 1` : Parameter and value for the collecter (**required**)
@@ -134,7 +137,7 @@ The implementation of OMV push notifications interface is pretty simple. The bas
 
 ## Notes:
 
-There is no warranties using this tool. Also, this is **NOT** an official tool, plugin, package, or application from OpenMediaVault, Simplepush or its communities. This interface is a simple tool I developed as a side project. Feel free to contact me if you need help with it.
+There is no warranties using this tool. Also, this is **NOT** an official tool, plugin, package, or application from OpenMediaVault, Simplepush or related communities. This interface is a simple tool I developed as a side project. Feel free to contact me if you need help with it, or submit a GitHub issue.
 
 ## TODO:
 1. Add an extra parameter to the temperature collector for collecting other temperatures like HDD.

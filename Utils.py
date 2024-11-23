@@ -1,4 +1,5 @@
 import time
+import socket
 
 # Class that handles helper functions
 class Utils:
@@ -94,3 +95,9 @@ class Utils:
         collectors_available = ["temperature_collector", "updates_available_collector", "disk_space_collector"]
         return collectors_available
 
+    def get_system_ip_address(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('10.0.0.0', 0))
+        ip_addrs = s.getsockname()[0]
+        s.close()
+        return ip_addrs

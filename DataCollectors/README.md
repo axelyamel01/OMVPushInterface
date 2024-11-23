@@ -12,7 +12,7 @@ Data collectors are just regular python functions that will generate the notific
 ```
 
 The elements represent the following:
-- Element 0: a bool that says if the message is valid or not (`True|False`)
+- Element 0: a bool that says if the message should be sent or not (`True|False`)
 - Element 1: a string that represents the message's title
 - Element 2: a string that represents the message's body
 

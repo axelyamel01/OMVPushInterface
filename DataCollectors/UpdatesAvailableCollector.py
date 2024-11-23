@@ -66,8 +66,12 @@ def updates_available_collector(temp_directory: str, debug: bool):
                 if dep_ver_installed:
                     continue
 
+                candidate_ver = dep_cache.get_candidate_ver(target_pkg)
+                if candidate_ver == None:
+                    continue
+
                 # Add the dependency as part of the updates list
-                ver_str = dep_cache.get_candidate_ver(target_pkg).ver_str
+                ver_str = candidate_ver.ver_str
                 package_name = "Package name: " + target_pkg.name + "\n"
                 package_curr_ver = "  Current installed version: " + ver_str + "\n"
                 package_update_ver = "  Newer version available: " + ver_str + "\n"

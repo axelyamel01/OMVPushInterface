@@ -94,6 +94,8 @@ def parse_config_file(config_file_path):
                 curr_omv_system = omv_systems[-1]
                 good_omv_config = curr_omv_system["hostname"] != "" and curr_omv_system["domain-name"] != ""
                 if not good_omv_config:
+                    if curr_omv_system["ip"] == "":
+                        curr_omv_system["ip"] = Utils().get_system_ip_address()
                     good_omv_config = curr_omv_system["ip"] != ""
                 if not good_omv_config:
                     config_file.close()
